@@ -18,6 +18,9 @@
 (def people {:a 1 :b 2 :c 5 :d 8})
 (def state {:time 0 :start people :crossed {}})
 
+;;T: try refactoring this with (get people x 0)....see what you can
+;;eliminate.
+
 ;;Returns the slowest speed in the group (Can handle null arguments)
 (defn get-speed [x y] ;;Gets the slowest speed of the group 
   (cond 
@@ -26,8 +29,17 @@
     (and y (not x))  (get people y)
     (and x y) (max (get people x) (get people  y))))
 
+;;T:keeps elemens in col that are not equal to val
 (defn rmv [val col]
   (filter #(not= val %) col))
+
+
+;;T: (dissoc (dissoc (get state :start) x) y)
+;;=> (dissoc (get state :start) x y)
+
+;;perhaps a useful way to clear up the code
+;;(let [{:keys [start crossed time]} state]
+;;  ...)
 
 ;;Returns new "state" with x y moved from start to crossed and adds time
 (defn cross [x y state]
@@ -35,22 +47,52 @@
     (let [new-start (dissoc (dissoc (get state :start) x) y)
           new-crossed  (merge {x (get people x) y (get people y)}
                               (get state :crossed))
-          new-time (+ (get-speed x y) (get state :time))] (->
-                                                           ;; Makes new "state" with updated values
-                                                           (assoc state :crossed new-crossed)
-                                                           (assoc :start new-start)
-                                                           (assoc :time new-time)))
+          new-time (+ (get-speed x y) (get state :time))]
+      (-> ;; Makes new "state" with updated values
+          (assoc state :crossed new-crossed)
+          (assoc :start new-start)
+          (assoc :time new-time)))
     ;; Ignores case when given duplicate keys 
     (catch IllegalArgumentException e)))
+
+;;T: maybe replace array-map with hash-map, or use {}...
+;;(assoc (get state :start) x (get people x))
 
 ;;Returns new "state" with x moved from crossed to start and adds time
 (defn cross-back [x state]
   (let [new-crossed (dissoc (get state :crossed x) x)
         new-start (merge (get state :start)  (array-map x (get people x)))
-        new-time (+ (get-speed x x) (get state :time))] (->
-                                                         (assoc state :crossed new-crossed)
-                                                         (assoc :start new-start)
-                                                         (assoc :time new-time))))
+        new-time (+ (get-speed x x) (get state :time))]
+    (->
+     (assoc state :crossed new-crossed)
+     (assoc :start new-start)
+     (assoc :time new-time))))
+
+;;T: you're doing more work than necessary in pair generation..
+;;Also, if you want to preclude duplicates in pairs...
+;;why not..
+;;(for [p (keys people)]
+;;  (for [q (rmv p (keys people))
+;;        :when (not= p q)]
+;;     [p q])))
+
+;; (for [p (keys people)]
+;;  (for [q (rmv p (keys people))
+;;        :when (not= p q)]
+;;    [p q]))
+
+;; (let [peeps (keys people)]
+;;   (for [p peeps
+;;         q (rmv p peeps)
+;;         :when (not= p q)]
+;;     [p q]))
+
+;; (let [peeps (vec (keys people))
+;;       n     (count peeps)]
+;;   (for [i (range n)
+;;         j (range (inc i) n)
+;;         :when (not= i j)]
+;;     [(nth peeps i) (nth peeps j)]))
 
 ;;Finds the minimal (fastest) pairing of people in the supplied set
 (defn minimal-pair [people]
