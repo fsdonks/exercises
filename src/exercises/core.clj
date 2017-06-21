@@ -214,6 +214,20 @@
   (let [lines (read-file filename)]
     (for [l lines :let [data (clojure.string/split l (re-pattern del))]] data)))
 
+;;T: fixed mo betta version.
+(defn read-delimited2 [filename del]
+  (let [lines (read-file filename)
+        pat   (re-pattern del)]
+    (for [l lines
+          :let [data (clojure.string/split l pat)]]
+      data)))
+
+(defn read-delimited3 [filename del]
+  (let [pat   (re-pattern del)]
+    (for [l   (clojure.string/split-lines (slurp filename))
+          :let [data (clojure.string/split l pat)]]
+      data)))
+
 (defn write-2d [filename data del1 del2]
   (import java.io.PrintWriter java.io.File)
   (let [w (java.io.PrintWriter. (File. filename))]
