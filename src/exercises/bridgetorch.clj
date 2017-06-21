@@ -93,3 +93,6 @@
     (take-while #(not (not %)) (iterate #(next-state % f) state))))
       
 (pprint (solve state))
+
+
+;;T: Uh oh, I think this is wrong bro! Looks like we can do it in 15!
