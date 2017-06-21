@@ -1,4 +1,4 @@
-i(ns exercises.bridgetorch)
+(ns exercises.bridgetorch)
 ;; A second problem (classic):
 
 ;; Four people come to a river in the night.
