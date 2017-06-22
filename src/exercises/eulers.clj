@@ -2,3 +2,5 @@
 ;;introductory learning...
 (ns exercises.eulers)
 ;;Euler 102, 107
+
+
