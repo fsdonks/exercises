@@ -11,3 +11,15 @@
 ;; what is the size of the “social network” for the word “causes” ?
 
 ;;[you can find the word data in ./resources/words.list] 
+
+;; File path
+;;"C:\\Users\\michael.m.pavlak\\Workspace\\exercises\\resources\\word.list"
+
+(def source-word "causes")
+
+(def file "C:\\Users\\michael.m.pavlak\\Workspace\\exercises\\resources\\word.list") 
+
+(defn read-words [filename]
+  (with-open [r (clojure.java.io/reader filename)]
+    (count (reduce conj [] (line-seq r)))))
+
