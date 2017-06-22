@@ -20,6 +20,8 @@
         k [:x1 :y1 :x2 :y2 :x3 :y3]]
     (zipmap k pts)))
 
+;;T: Are you using barycentric coordinates?
+
 ;; Contains zero if paramatrized points t1 and t2 have the properties:
 ;; 0<=t1<=1 and 0<=t2<=t and t1+t2<=1
 (defn tri-contains-zero? [tri] ;; Map -> Boolean
@@ -33,6 +35,11 @@
         ;; t2 = -x1*y2 + y1*x2 / -d
         t2 (/ (+ (* (* -1 x1) y2) (* y1 x2)) (* -1 d))]
     (and (between01? t1) (between01? t2) (<= (+ t1 t2) 1))))
+
+;;T: alternately..
+;; (let [{:keys [x1 x2 x3 y1 y2 y3]} tri
+;;       ... ]
+;;   )
 
 ;; Counts the number of triangle in the file which contain the point (0,0)
 (defn count-zero-triangles [filename] ;; String (filename) -> Number
