@@ -53,3 +53,7 @@
                (filter-substitution s %) ;;if same length, check for substitution
                (filter-count s %)) wordsf))) ;;otherwise check for add/sub
 
+(defn social-network [s words]
+
+(reduce (fn [acc s]
+          (concat acc (filter-source s wds))) '() (filter-source "causes" wds))
