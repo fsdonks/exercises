@@ -147,11 +147,9 @@
                                  (let [next (multiple-friends net words)]
                                    (if (= (count next) size)
                                      nil
-                                     (do 
-                                       (println size)
-                                       {:net next
-                                        :size (count next)}))))
-                               {:net g :count (count g)})))))
+                                     {:net next
+                                      :size (count next)}))))
+                      {:net g :count (count g)}))))
 
 
                            
