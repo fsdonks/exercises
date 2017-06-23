@@ -20,7 +20,7 @@
 ;; Reads in all words from file and returns a vector
 (defn read-words [filename] ;; String (filename) -> Vector
   (with-open [r (clojure.java.io/reader filename)]
-    (reduce conj [] (line-seq r))))
+    (reduce conj #{} (line-seq r))))
 
 ;; Filters out any word with length difference more than 1.
 (defn filter-by-length [s words] ;; String, Collection -> filtered coll
@@ -50,10 +50,101 @@
   (let [count-s (count s) wordsf (filter-by-length s words)]
     ;; wordsf is a coll of words that different by less than 1 
     (filter #(if (= count-s (count %)) 
-               (filter-substitution s %) ;;if same length, check for substitution
-               (filter-count s %)) wordsf))) ;;otherwise check for add/sub
+                         (filter-substitution s %) ;;if same length, check for substitution
+                         (filter-count s %)) wordsf))) ;;otherwise check for add/sub
 
-(defn social-network [s words]
+;; =================================================================
+(comment ;;Sorting words first - this method won't work, does not consider
+  ;;new cases after initial update of network
+(defn difference-count [s other]
+  (+   (Math/abs (- (count s) (count other)))
+       (count (filter #(not %) (map = (seq s) (seq other))))))
+    
+(defn sort-by-diffs [s words]
+  (sort-by #(difference-count s %) words))
 
-(reduce (fn [acc s]
-          (concat acc (filter-source s wds))) '() (filter-source "causes" wds))
+(defn in-network? [network candidate]
+  (->>
+   (map #(difference-count candidate %) network)
+   (some #(<= % 1))))
+
+(defn grow-network [network candidate]
+  (if (in-network? network candidate)
+    (conj network candidate)
+    nil))
+
+(defn find-network [s words network  i]
+  (let [net (grow-network network (nth words i))]
+    (if (not net)
+      network
+      (recur s words net (inc i)))))
+) ;;===============================================================
+
+
+;; Used in replace and insert functions
+(def alpha ["a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q"
+            "r" "s" "t" "u" "v" "w" "x" "y" "z"])
+
+;; Replaces (substitutes) the value r at index i in string s
+(defn replace-string [s r i] ;;String -> String
+  (str (subs s 0 i) r (subs s (unchecked-inc i))))
+
+;; Inserts the value r at index i in string s
+(defn insert-string [s r i] ;; String -> String
+  (str (subs s 0 i) r (subs s i)))
+
+;; Removes the value at index i in string s
+(defn remove-string [s i] ;; String -> String
+  (str (subs s 0 i) (subs s (unchecked-inc i))))
+
+;; Finds all words in "words" that can be made by substituting values in word s 
+(defn substitutions [s words] ;; String, Set -> Set
+  (for [i (range (count s)) a alpha 
+        :let [cand (replace-string s a i)] 
+        :when (get words cand)]
+    cand))
+
+;; Finds all words in "words" that can be made by
+;; adding/inserting a single value in word s  
+(defn additions [s words]  ;; String, Set -> Set
+  (for [i (range (count s)) a alpha 
+        :let [cand (insert-string s a i)]
+        :when (get words cand)]
+    cand))
+
+;; Finds all words in "words" that can be made by
+;; removing a single value in word s
+(defn removals [s words] ;; String, Set -> Set
+  (for [i (range (count s))
+        :let [cand (remove-string s i)]
+        :when (get words cand)]
+    cand))
+
+;; Returns a set of words that are "friends" with the string s given words 
+(defn friends-of-word [s words] ;; String, Set -> Set
+  (->>
+   (into #{} (substitutions s words))
+   (into (additions s words))
+   (into (removals s words))))
+
+             
+
+  
+          
+
+;; ================================================================
+(comment ;; Brute force method
+(defn build-network [s words used friends]
+  {:friends  (clojure.set/difference (into friends (filter-source s words))
+                                     (conj used s))
+   :used (conj used s)})
+
+(defn social-network [s words used friends]
+  (let [net (time (build-network s words used friends))]
+    (if (zero? (count (get net :friends)))
+      (get net :used)
+      (recur (first (get net :friends)) words
+             (get net :used) (get net :friends)))))
+) ;;================================================================
+
+
