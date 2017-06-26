@@ -95,29 +95,33 @@
    (.getWidth frame)
    (.getHeight frame)))
 
+;;T: use doto for more idiomatic java object-smashing.
 ;; Focuses the frame on the screen, returns true when done
 (defn focus-frame [frame]
-  (.setAlwaysOnTop frame true) ;; put on top of all other windows
-  (.setState frame Frame/NORMAL) ;; un-minimizes/un-maximized
-  (.toFront frame) ;; brings to front
-  (.requestFocus frame) 
-  (.setVisible frame true) ;; makes visible on screen
-  frame)
+  (doto frame
+    (.setAlwaysOnTop  true) ;; put on top of all other windows
+    (.setState  Frame/NORMAL) ;; un-minimizes/un-maximized
+    (.toFront ) ;; brings to front
+    (.requestFocus) 
+    (.setVisible true) ;; makes visible on screen
+    ))
 
 ;; Adds/Removes border from frame, returns true when done 
-(defn frame-border [frame bool] 
-  (.setVisible frame false) ;; Removes from screen 
-  (.removeNotify frame) ;; Makes frame undisplayaple
-  (.setUndecorated frame (not bool)) ;;removes broder
-  (.addNotify frame) ;;Makes frame displayable again
-  (.setVisible frame true) ;; Sets frame visible on screen
-  frame)
+(defn frame-border [frame bool]
+  (doto frame
+    (.setVisible  false) ;; Removes from screen 
+    (.removeNotify) ;; Makes frame undisplayaple
+    (.setUndecorated (not bool)) ;;removes broder
+    (.addNotify) ;;Makes frame displayable again
+    (.setVisible true) ;; Sets frame visible on screen
+  ))
 
 ;; Releases focus of the screen, returns true when done
 (defn release-frame [frame]
-  (.setAlwaysOnTop frame false)  
-  (.toBack frame) ;; pushed frame to back
-  frame)
+  (doto frame
+    (.setAlwaysOnTop false)  
+    (.toBack) ;; pushed frame to back
+    ))
 
 ;; Creates an image from screen capture and writes to file
 (defn write-frame [frame filename]
