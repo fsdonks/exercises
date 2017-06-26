@@ -129,10 +129,11 @@
 
 ;; Returns result of calls to friends of words for each string in ss 
 (defn multiple-friends [ss words] ;; Coll, Set -> Set
-  (reduce clojure.set/union
-          (for [s ss]
-            (friends-of-word s words))))
-
+  (clojure.set/union ss
+                     (reduce clojure.set/union
+                             (for [s ss]
+                               (friends-of-word s words)))))
+  
 ;; Returns multiple-friends of friends of source word s
 (defn grow [s words] ;; String, Set -> Set
   (let [g (friends-of-word s words)]
@@ -148,19 +149,9 @@
                                    (if (= (count next) size)
                                      nil
                                      {:net next
-                                      :size (count next)}))))
-                      {:net g :count (count g)}))))
+                                      :size (count next)})))
+                               {:net g :size (count g)})))))
 
-
-                           
-    
-
-(defn solve [s words] ;; String, Set -> Set 
-  (into #{} (flatten
-             (for [gr (grow s words)]
-               (friends-of-word gr words)))))
-
-          
 
 ;; =================================================================
 (comment ;; Brute force method
