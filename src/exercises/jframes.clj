@@ -1,17 +1,82 @@
-(ns exercises.jframes)
+(ns exercises.jframes
+  ;;T: We can use some of this stuff that I've already wrapped
+  ;;in Spork.
+  (:require [spork.graphics2d [image :as image]
+                              [canvas :as canvas]]
+            [spork.cljgui.components [swing :as swing]]
+            ;;some plots useful for our stuff.
+            [incanter [core :as i]
+                      [charts :as c]
+                      [stats :as s]])                           
+  ;;T: Always put imports in the NS declaration if you can...
+  ;;I moved yours here
+  (:import [java.awt Frame Rectangle Robot Container Font Graphics2D]
+           [java.awt.image BufferedImage]
+           [java.io  File]
+           [javax.imageio ImageIO]
+           [javax.swing JFrame JLabel JPanel]
+           ;;T: Some stuff from proc.core, native classes for charts.
+           [org.jfree.chart ChartPanel]
+           ))
 
-(import java.awt.Frame)
-(import java.awt.Rectangle)
-(import java.awt.Robot)
-(import java.io.File)
-(import javax.imageio.ImageIO)
-(import javax.swing.JFrame)
-(import javax.swing.JLabel)
-(import java.awt.Container)
-(import javax.swing.JPanel)
-(import java.awt.Font)
-(import java.awt.Graphics2D)
-(import java.awt.image.BufferedImage)
+;;aux functions
+;;============
+
+(defn ^ChartPanel chart!
+  "Pulled this from proc.core .  Creates a JPanel wrapper around 
+   a JFreeChart chart, which is what Incanter returns.  This allows 
+   us to use combinators from spork.cljgui.components.swing to 
+   embed charts in complicated ui layouts easily."
+  [ch]  
+  (ChartPanel. ch true true true true true))
+
+;;Let's create a test function that renders something "like"
+;;dwell-over-fill, i.e. two charts stacked on top of eachother...
+(defn hm
+  "Makes a sample heatmap, as per (doc heat-map) example.."
+  []
+  (let [data [[0 5 1 2]
+              [0 10 1.9 1]
+              [15 0 0.5 1.5]
+              [18 10 4.5 2.1]]
+          diffusion (fn [x y]
+                      (i/sum (map #(s/pdf-normal (s/euclidean-distance [x y] (take 2 %))
+                                                 :mean (nth % 2) :sd (last %))
+                                  data)))]
+    (c/heat-map diffusion -5 20 -5 20)))
+
+(defn sample-chart
+  "Creates our analogue for the dwell-over-fill chart."
+  []
+  (swing/stack (chart! (hm))
+               (chart! (hm))))
+
+;;If you plug this in at the REPL (minus the #_ comment reader macro,
+;;you should get a JFrame with two identical,stacked charts showing...
+#_(swing/->scrollable-view (sample-chart)) 
+
+;;The problem is...we don't want to have an interactive chart pop up, we don't
+;;want ANYTHING to pop up.  Remember, this should be programmatic.
+;;Can we render this offscreen?
+;;Sure....
+;;  But it takes some doing.  You have to force layout to an invisible jframe
+;;    and other fun stuff....
+;;    Unless you've already got access to a library that wraps the crap
+;;    for you (hint).
+(defn save-the-chart [c]
+  (image/shape->png c ".\\blah.png" :on-save println))
+
+;; exercises.jframes> (save-the-chart (sample-chart))
+;; Buffer saved to:.\blah.png
+;; nil
+
+
+;;With something akin to save-the-chart, you ought to be
+;;able to quickly dump a bunch of PNGs for anything that's
+;;shape-like (shapes according to spork.graphics2d.canvas,
+;;which are extended to include JComponents (which should
+;;cover JPanels and other subclassed stuff....)))
+
 
 (comment 
 (defn example-frame []
