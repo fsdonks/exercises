@@ -6,6 +6,12 @@
 (import java.io.File)
 (import javax.imageio.ImageIO)
 (import javax.swing.JFrame)
+(import javax.swing.JLabel)
+(import java.awt.Container)
+(import javax.swing.JPanel)
+(import java.awt.Font)
+ 
+
 
 (comment 
 (defn example-frame []
@@ -57,10 +63,36 @@
 
 ;; Focuses the frame, writes the frame, then releases focus
 (defn save-frame [frame filename]
-  (let [border (frame-border frame false) ;;let binding used as delay 
-        focus (focus-frame frame)])
+  (while (not (focus-frame frame)) ;; waits for value to be returned
+    (focus-frame))
+  (while (not (frame-border frame false)) ;; waits for value to be returned
+    (frame-border frame false))
   (write-frame frame filename)
-  (frame-border frame true)
-  (if (not (release-frame frame)) ;;if evaluation used as delay 
+  (while (not (frame-border frame true)) ;; waits for value to be returned 
+    (frame-border frame true))
+  (while (not (release-frame frame)) ;; waits for value to be returned 
     (release-frame frame)))
+
+
+(defn make-label [text & font]
+  (let [lab (JLabel. text)
+        font (.getFont lab)]
+    (if font
+      (.setFont lab font)
+      (.setFont lab (Font. "Times New Roman" 1 12)))
+    lab))
+
+(defn make-font [name style size]
+  ;; Style: Font/BOLD, Font/Italic, ect. (can add multiple styles together)
+  (Font. name style size))
+
+
+
+(defn add-component [frame panel comp]
+  (.add panel comp)
+  (.add frame panel)
+  (.pack frame))
   
+  
+
+
