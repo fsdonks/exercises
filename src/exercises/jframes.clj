@@ -10,7 +10,9 @@
 (import java.awt.Container)
 (import javax.swing.JPanel)
 (import java.awt.Font)
- 
+(import java.awt.Graphics2D)
+(import java.awt.image.BufferedImage)
+
 (comment 
 (defn example-frame []
   (import 'javax.swing.JFrame)
@@ -56,9 +58,11 @@
 (defn write-frame [frame filename]
   (let [buff (.createScreenCapture (Robot.) (frame-rec frame))
         file (File. filename)] ;; Buffered Image and File pointer 
-    (javax.imageio.ImageIO/write buff "jpg" file))
+    (javax.imageio.ImageIO/write buff "png" file))
   frame) ;; Writes to file 
 
+
+(comment ;; ==== OLD ===============================================
 ;; Focuses the frame, writes the frame, then releases focus
 (defn save-frame [frame filename]
   (while (not (frame-border frame false)))  ;; waits for value to be returned
@@ -66,7 +70,22 @@
   (write-frame frame filename)
   (while (not (frame-border frame true))) ;; waits for value to be returned 
   (while (not (release-frame frame))) ;; waits for value to be returned 
-  frame)
+  frame))
+;;=================================================================
+
+;; Saves frame to file
+(defn save-frame [frame filename] 
+  (let [container  (.getContentPane frame)
+        buff (BufferedImage.
+              (.getWidth container)
+              (.getHeight container)
+              (BufferedImage/TYPE_INT_RGB))
+        graf (.createGraphics buff)
+        file (File. filename)]
+    (.printAll container graf)
+    (.dispose graf)
+    (javax.imageio.ImageIO/write buff "png" file))
+  frame) ;; returns frame 
 
 ;; Creates a JLabel with text and font
 (defn make-label [text & font]
