@@ -11,8 +11,6 @@
 (import javax.swing.JPanel)
 (import java.awt.Font)
  
-
-
 (comment 
 (defn example-frame []
   (import 'javax.swing.JFrame)
@@ -63,16 +61,11 @@
 
 ;; Focuses the frame, writes the frame, then releases focus
 (defn save-frame [frame filename]
-  (while (not (focus-frame frame)) ;; waits for value to be returned
-    (focus-frame))
-  (while (not (frame-border frame false)) ;; waits for value to be returned
-    (frame-border frame false))
+  (while (not (focus-frame frame))) ;; waits for value to be returned
+  (while (not (frame-border frame false))) ;; waits for value to be returned
   (write-frame frame filename)
-  (while (not (frame-border frame true)) ;; waits for value to be returned 
-    (frame-border frame true))
-  (while (not (release-frame frame)) ;; waits for value to be returned 
-    (release-frame frame)))
-
+  (while (not (frame-border frame true))) ;; waits for value to be returned 
+  (while (not (release-frame frame)))) ;; waits for value to be returned 
 
 (defn make-label [text & font]
   (let [lab (JLabel. text)
@@ -85,8 +78,6 @@
 (defn make-font [name style size]
   ;; Style: Font/BOLD, Font/Italic, ect. (can add multiple styles together)
   (Font. name style size))
-
-
 
 (defn add-component [frame panel comp]
   (.add panel comp)
