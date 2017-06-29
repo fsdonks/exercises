@@ -51,8 +51,23 @@
 (defn sample-chart
   "Creates our analogue for the dwell-over-fill chart."
   []
-  (swing/stack (chart! (hm))
+  (swing/stack (swing/label
+                "This is a label, just like in Proc...Except we're not rendering the jframe ever....")
+               (chart! (hm))
                (chart! (hm))))
+
+(defn scatter []
+  (let [mvn-samp (s/sample-mvn 1000 :mean [7 5] :sigma (i/matrix [[2 1.5] [1.5 3]]))]
+        ;; create scatter-plot of points
+    (c/scatter-plot (i/sel mvn-samp :cols 0) (i/sel mvn-samp :cols 1))))
+
+(defn complex-chart []
+    (swing/stack (swing/label
+                  "This is a label, just like in Proc...Except we're not rendering the jframe ever....")
+                 (chart! (hm))
+                 (chart! (hm))
+                 (swing/shelf (chart! (scatter)) (chart! (scatter))))
+  )
 
 ;;If you plug this in at the REPL (minus the #_ comment reader macro,
 ;;you should get a JFrame with two identical,stacked charts showing...
