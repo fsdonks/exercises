@@ -69,6 +69,14 @@
                  (swing/shelf (chart! (scatter)) (chart! (scatter))))
   )
 
+(defn complex-chartv []
+    (swing/stack (swing/label
+                  "This is a label, just like in Proc...Except we're not rendering the jframe ever....")
+                 (chart! (hm))
+                 (chart! (hm))
+                 (chart! (scatter))
+                 (chart! (scatter))))
+
 ;;If you plug this in at the REPL (minus the #_ comment reader macro,
 ;;you should get a JFrame with two identical,stacked charts showing...
 #_(swing/->scrollable-view (sample-chart)) 
