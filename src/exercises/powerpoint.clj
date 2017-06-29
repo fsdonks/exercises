@@ -13,6 +13,7 @@
             ))
 
 ;;TODO: Fix reflection warnings.
+;; Added wrapper functions to fix reflection warnings
 (set! *warn-on-reflection* true)
 ;;constants and such.
 ;;==================
@@ -74,15 +75,27 @@
   "Given a ppt, creates new slide and adds picture from file for each file"
   [ppt filenames]
   (doseq [file filenames]
-    (add-picture ppt (create-slide ppt) file))
-  ppt) ;; returns ppt
+    (add-picture ppt (->slide ppt) file))
+  ppt) ;; returns pp
+
+;; Wrapper function for getSlideMasters method 
+;; Takes a XMLSlideShow ppt and returns an array of XSLFSlideMaster objects
+(defn ^"[Lorg.apache.poi.xslf.usermodel.XSLFSlideMaster;"
+  get-slide-masters [^XMLSlideShow ppt]
+  (.getSlideMasters ppt))
+
+;; Wrapper function for getLayout method
+;; Takes a XSLFSlideMaster and optional type (int) and returns a XSLFSlideLayout
+(defn ^XSLFSlideLayout get-layout [^XSLFSlideMaster slide-master &type]
+  (let [type (if type (first type) SlideLayout/TITLE_AND_CONTENT)]
+    (.getLayout slide-master type)))
 
 (defn ^XMLSlideShow format-layout
   "Creates a new slide on new-ppt with layout from template file"
   [template-file new-ppt]
   (let [template (->pptx template-file) 
-        slide-master (first (.getSlideMasters template))
-        layout (.getLayout slide-master SlideLayout/TITLE_AND_CONTENT)
+        slide-master  (first (get-slide-masters template))
+        layout  (get-layout slide-master SlideLayout/TITLE_AND_CONTENT)
         _      (->slide new-ppt layout)]
     new-ppt))
 
@@ -91,8 +104,8 @@
    where slide type determined by type arg (integer - from SlideLayout vars)"
   [template-file new-ppt type]
   (let [template (->pptx template-file)
-        slide-master (first (.getSlideMasters template))
-        layout (.getLayout slide-master type)
+        slide-master (first (get-slide-masters  template))
+        layout (get-layout slide-master type)
         _      (->slide new-ppt layout)]
     new-ppt))
 
@@ -103,13 +116,22 @@
     (doto (->slide current-ppt)
       (.importContent  ^XSLFSlide info)))) ;;returns ->slide
 
+;; Wraper function for getSlideLayouts : takes a XSLFSlide master obj and returns
+(defn ^"[Lorg.apache.poi.xslf.usermodel.XSLFSlideLayout;" ;;array of XSLFSlideLayouts 
+  get-slide-layouts [^XSLFSlideMaster m]
+  (.getSlideLayouts m))
+
+;; Wrapper function for get-type : takes a XSLFSlideLayout obj and returns a SlideLayout
+(defn ^SlideLayout get-type [^XSLFSlideLayout layout]
+  (.getType layout))
+
 (defn print-layouts
   "Prints out all layouts that are available in ppt"
   [ppt] ;; Java ppt obj -> nil (Standard Out) 
   (println "Available slide layouts: ")
-  (doseq [m (.getSlideMasters ppt)]
-    (doseq [l (.getSlideLayouts m)]
-      (println (.getType l))))) 
+  (doseq [m (get-slide-masters ppt)]
+    (doseq [l (get-slide-layouts m)]
+      (println  (get-type l))))) 
 
 (defn ^XSLFTheme get-theme
   "Returns java theme object from slide, or if a file is 
