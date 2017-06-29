@@ -10,7 +10,7 @@
 ;;use reflection to rip out all the constants into a map for us...
 (defn class->constants [cls]
   (->> (:members (reflect/reflect cls))
-       (filter #(every? (:flags %) [:public :static :final]) )
+       (filter #(every? (:flags %) [:public :static :final]))
        (map :name)))
 
 (defn class-name
@@ -64,6 +64,6 @@
 (defn file->bytes
   "Slurps all byes from a file immediately, returning a byte array."
   [p]
-  (->>  (io/file p)
-        ^Path (.toPath)
-        (Files/readAllBytes)))
+  (-> (io/file p)
+      ^Path (.toPath)
+      (Files/readAllBytes)))

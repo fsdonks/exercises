@@ -68,7 +68,9 @@
 (defn ^XSLFSlide add-picture
   [^XMLSlideShow ppt ^XSLFSlide slide filename &
    {:keys [format] :or {format "PNG"}}]
-  (let [data (.addPicture ppt (picture->data filename) format)]
+  (let [data (.addPicture ppt
+                          (picture->data filename)
+                          (get-picturedata-type format))]
     (doto slide (.createPicture data)))) ;; returns slide
 
 (defn ^XMLSlideShow add-pictures
@@ -80,9 +82,8 @@
 
 ;; Wrapper function for getSlideMasters method 
 ;; Takes a XMLSlideShow ppt and returns an array of XSLFSlideMaster objects
-(defn ^"[Lorg.apache.poi.xslf.usermodel.XSLFSlideMaster;"
-  get-slide-masters [^XMLSlideShow ppt]
-  (.getSlideMasters ppt))
+(defn get-slide-masters [^XMLSlideShow ppt]
+  (vec (.getSlideMasters ppt)))
 
 ;; Wrapper function for getLayout method
 ;; Takes a XSLFSlideMaster and optional type (int) and returns a XSLFSlideLayout
@@ -95,8 +96,8 @@
   [template-file new-ppt]
   (let [template (->pptx template-file) 
         slide-master  (first (get-slide-masters template))
-        layout  (get-layout slide-master SlideLayout/TITLE_AND_CONTENT)
-        _      (->slide new-ppt layout)]
+        layout   (get-layout slide-master SlideLayout/TITLE_AND_CONTENT)
+        _        (->slide new-ppt layout)]
     new-ppt))
 
 (defn ^XMLSlideShow format-layout-type
@@ -117,9 +118,9 @@
       (.importContent  ^XSLFSlide info)))) ;;returns ->slide
 
 ;; Wraper function for getSlideLayouts : takes a XSLFSlide master obj and returns
-(defn ^"[Lorg.apache.poi.xslf.usermodel.XSLFSlideLayout;" ;;array of XSLFSlideLayouts 
+(defn  ;;array of XSLFSlideLayouts 
   get-slide-layouts [^XSLFSlideMaster m]
-  (.getSlideLayouts m))
+  (vec (.getSlideLayouts m)))
 
 ;; Wrapper function for get-type : takes a XSLFSlideLayout obj and returns a SlideLayout
 (defn ^SlideLayout get-type [^XSLFSlideLayout layout]
