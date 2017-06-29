@@ -10,7 +10,8 @@
                       [stats :as s]])                           
   ;;T: Always put imports in the NS declaration if you can...
   ;;I moved yours here
-  (:import [java.awt Frame Rectangle Robot Container Font Graphics2D]
+  (:import [java.awt Frame Rectangle  Robot Container Image Graphics
+            Font Graphics2D Dimension Component Toolkit]
            [java.awt.image BufferedImage]
            [java.io  File]
            [javax.imageio ImageIO]
@@ -18,6 +19,8 @@
            ;;T: Some stuff from proc.core, native classes for charts.
            [org.jfree.chart ChartPanel]
            ))
+
+;;(set! *warn-on-reflection* true)
 
 ;;aux functions
 ;;============
@@ -70,6 +73,66 @@
 ;; Buffer saved to:.\blah.png
 ;; nil
 
+(defn get-run [frame]
+  "run" ;; will use functions from proc to get run information
+  )
+
+(defn get-interest [frame]
+  "interest" ;; will use functions from proc to get interest information
+  )
+
+(defn get-name [frame]
+  (str "Run" (get-run frame) "-" (get-interest frame)))
+
+(defn save-frames [frames]
+  (doseq [frame frames]
+    (image/shape->png frame (get-name frame) :on-save println)))
+
+(defn set-size [^JFrame frame width height]
+  (.setSize frame (Dimension. width height)) frame)
+
+(defn hide-frame [^JFrame frame]
+  (.setVisible frame false) frame)
+
+(defn show-frame [^JFrame frame]
+  (.setVisible frame true) frame)
+
+(defn make-displayable [^Component comp]
+  (.addNotify comp) comp)
+
+(defn ^JFrame new-frame []
+  (JFrame.))
+
+(defn get-screen-size []
+  (.getScreenSize (Toolkit/getDefaultToolkit)))
+
+    ;;(spork.graphics2d.image/save-image (.createImage frame 800 800) filename println)))
+    
+(defn write-frame [frame filename]
+  ;; Saves frame to file 
+  (let [container  (.getContentPane frame) 
+        buff (BufferedImage. 
+              (.getWidth container) 
+               (.getHeight container) 
+               (BufferedImage/TYPE_INT_RGB)) 
+        graf (.createGraphics buff) 
+        file (File. filename)] 
+    (.printAll container graf) 
+     (.dispose graf) 
+     (javax.imageio.ImageIO/write buff "png" file)) 
+  frame) ;; returns frame  
+
+(defn save-frame [frame filename]
+  (let [width (.width (get-screen-size))
+        height (.height (get-screen-size))]
+    (doto frame
+      (.setSize 800 800)
+      (.setLocation (* width width) (* height height))
+      (.setVisible true)
+      (.setVisible false)
+      (.setLocation 0 0))
+    (write-frame frame filename)))
+
 
 ;;With something akin to save-the-chart, you ought to be
 ;;able to quickly dump a bunch of PNGs for anything that's
@@ -78,22 +141,22 @@
 ;;cover JPanels and other subclassed stuff....)))
 
 
+;; ==== OLD =======================================================
+;; Function used for previous method of saving file
+
+;;T: use doto for more idiomatic java object-smashing.
+;; Focuses the frame on the screen, returns true when done
+
 ;; Returns dimensions of frame as Java Rectangle object
 ;; Used as arument for Java Robot 
-(defn frame-rec [frame]
+(defn frame-rec [^JFrame frame]
   (Rectangle.
    (.getX frame)
    (.getY frame)
    (.getWidth frame)
    (.getHeight frame)))
 
-
-;; ==== OLD =======================================================
-;; Function used for previous method of saving file
-
-;;T: use doto for more idiomatic java object-smashing.
-;; Focuses the frame on the screen, returns true when done
-(defn focus-frame [frame]
+(defn focus-frame [^JFrame frame]
   (doto frame
     (.setAlwaysOnTop  true) ;; put on top of all other windows
     (.setState  Frame/NORMAL) ;; un-minimizes/un-maximized
@@ -103,7 +166,7 @@
     ))
 
 ;; Adds/Removes border from frame, returns true when done 
-(defn frame-border [frame bool]
+(defn frame-border [^JFrame frame bool]
   (doto frame
     (.setVisible  false) ;; Removes from screen 
     (.removeNotify) ;; Makes frame undisplayaple
@@ -113,38 +176,26 @@
   ))
 
 ;; Releases focus of the screen, returns true when done
-(defn release-frame [frame]
+(defn release-frame [^JFrame frame]
   (doto frame
     (.setAlwaysOnTop false)  
     (.toBack) ;; pushed frame to back
     ))
 
 ;; Creates an image from screen capture and writes to file
+(comment 
 (defn write-frame [frame filename]
   (let [buff (.createScreenCapture (Robot.) (frame-rec frame))
         file (File. filename)] ;; Buffered Image and File pointer 
     (javax.imageio.ImageIO/write buff "png" file))
-  frame) ;; Writes to file 
+  frame) ;; Writes to file
+)
 ;; ================================================================
 
-;; Saves frame to file
-(defn save-frame [frame filename] 
-  (.setVisible frame false)
-  (let [container  (.getContentPane frame)
-        buff (BufferedImage.
-              (.getWidth container)
-              (.getHeight container)
-              (BufferedImage/TYPE_INT_RGB))
-        graf (.createGraphics buff)
-        file (File. filename)]
-    (.printAll container graf)
-    (.dispose graf)
-    (javax.imageio.ImageIO/write buff "png" file))
-  frame) ;; returns frame 
-
 ;; Creates a JLabel with text and font
-(defn make-label [text & font]
-  (let [lab (JLabel. text)]
+;; Have to hint String on text because JLabel constructor with 1 arg is overloaded 
+(defn ^JLabel make-label [^String text & font] 
+  (let [lab   (JLabel. text)]
     (if font
       (.setFont lab font)
       (.setFont lab (Font. "Times New Roman" 1 24)))
@@ -162,17 +213,19 @@
   (Font. name style size))
 
 ;;adds new component to frame 
-(defn add-component [frame comp]
+(defn ^JFrame add-component [^JFrame frame ^Component comp]
   (.add (.getContentPane frame) comp)
   frame) ;; returns updated frame
 
 ;; Sets the title of frame
-(defn set-title [frame title]
+(defn set-title [^JFrame frame title]
   (.setTitle frame title)
   frame) ;; returns updated frame
 
 ;; Sets the taskbar-title with information about run and interest
-(defn set-taskbar-title [frame run interest] 
+(defn set-taskbar-title [^JFrame frame run interest] 
   (set-title frame (str "Run" run "-" interest))
   frame) ;; returns updated frame
+
+
 
