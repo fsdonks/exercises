@@ -6,20 +6,22 @@
    [java.awt.datatransfer Transferable DataFlavor]
    [java.io File])) 
 
-"Class used override 'Transferable' method and pass information to the clipboard" (gen-class
+"Class used override 'Transferable' method and pass information to the clipboard"
+(gen-class
  :name exercises.clipboard.clip
  :state state
  :init init
  :prefix "-"
  :implements [java.awt.datatransfer.Transferable])
 
+(comment
 "Class used as an instance of a 'ClipboardOwner'. Used to notify when ownership of data in clipboard is lost." 
 (gen-class
  :name exercises.clipboard.own
  :init init
  :prefix "_"
  :implements [java.awt.datatransfer.ClipboardOwner])
-
+)
 ;;(compile 'exercises.clipboard) ;; Need to compile so that classes exist
 
 
@@ -32,9 +34,10 @@
 ;; ===== Clipboard Owner Implementation =================================
 ;; Can alternativly remove this class and just give null argeument
 ;; in constructor for 'transferable' instance
+(comment
 (defn _init [] )  
 (defn _lostOwnership [this cb conts]
-  (println "clipboard lost ownership."))
+  (println "clipboard lost ownership.")))
 ;; ====================================================================
 
 (defn get-files [this] (get-field this :files)) ;; gets current files in 'transferable'
@@ -78,7 +81,11 @@
   (let [ft (new-file-trans files)
         cb (.getSystemClipboard
             (java.awt.Toolkit/getDefaultToolkit))]
-    (.setContents cb ft (exercises.clipboard.own.))))
+    (.setContents cb ft (proxy [java.awt.datatransfer.ClipboardOwner] []
+                          (lostOwnership [cb conts]
+                            (println "Proxy override for lost ownership"))))))
+
+    ;;(exercises.clipboard.own.))))
 
 ;; Creates a temp file from buffered image and copies it to the system clipboard
 (defn image-to-temp [buff]
