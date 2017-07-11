@@ -10,12 +10,9 @@
                       [stats :as s]])                           
   ;;T: Always put imports in the NS declaration if you can...
   ;;I moved yours here
-  (:import [java.awt Frame Rectangle  Robot Container Image Graphics
-            Font Graphics2D Dimension Component Toolkit]
+  (:import [java.awt Container Font  Component ]
            [java.awt.image BufferedImage]
-           [java.io  File]
-           [javax.imageio ImageIO]
-           [javax.swing JFrame JLabel JPanel]
+           [javax.swing JFrame JLabel JPanel JComponent]
            ;;T: Some stuff from proc.core, native classes for charts.
            [org.jfree.chart ChartPanel]
            ))
@@ -96,6 +93,14 @@
 ;; Buffer saved to:.\blah.png
 ;; nil
 
+(defn save-chart [c path]
+  (image/shape->png c path :on-save println))
+
+(defn make-label [text font]
+  (let [lab (swing/label text)]
+    (doto lab (.setFont font)) lab))
+
+
 (defn get-run [frame]
   "run" ;; will use functions from proc to get run information
   )
@@ -109,10 +114,11 @@
 
 (defn save-frames [frames]
   (doseq [frame frames]
-    (image/shape->png frame (get-name frame) :on-save println)))
+    (image/shape->png frame
+                      (str ".\\" (get-name frame) ".png") :on-save println)))
 
-(defn set-size [^JFrame frame width height]
-  (.setSize frame (Dimension. width height)) frame)
+;;(defn set-size [^JFrame frame width height]
+;;  (.setSize frame (Dimension. width height)) frame)
 
 (defn hide-frame [^JFrame frame]
   (.setVisible frame false) frame)
@@ -126,11 +132,9 @@
 (defn ^JFrame new-frame []
   (JFrame.))
 
-(defn get-screen-size []
-  (.getScreenSize (Toolkit/getDefaultToolkit)))
-
     ;;(spork.graphics2d.image/save-image (.createImage frame 800 800) filename println)))
-    
+
+(comment
 (defn write-frame [frame filename]
   ;; Saves frame to file 
   (let [container  (.getContentPane frame) 
@@ -143,8 +147,9 @@
     (.printAll container graf) 
      (.dispose graf) 
      (javax.imageio.ImageIO/write buff "png" file)) 
-  frame) ;; returns frame  
-
+  frame) ;; returns frame
+)
+(comment
 (defn save-frame [frame filename]
   (let [width (.width (get-screen-size))
         height (.height (get-screen-size))]
@@ -155,7 +160,7 @@
       (.setVisible false)
       (.setLocation 0 0))
     (write-frame frame filename)))
-
+)
 
 ;;With something akin to save-the-chart, you ought to be
 ;;able to quickly dump a bunch of PNGs for anything that's
@@ -163,7 +168,7 @@
 ;;which are extended to include JComponents (which should
 ;;cover JPanels and other subclassed stuff....)))
 
-
+(comment
 ;; ==== OLD =======================================================
 ;; Function used for previous method of saving file
 
@@ -212,11 +217,13 @@
         file (File. filename)] ;; Buffered Image and File pointer 
     (javax.imageio.ImageIO/write buff "png" file))
   frame) ;; Writes to file
-)
+))
 ;; ================================================================
 
 ;; Creates a JLabel with text and font
-;; Have to hint String on text because JLabel constructor with 1 arg is overloaded 
+;; Have to hint String on text because JLabel constructor with 1 arg is overloaded
+
+;; Change to use image library 
 (defn ^JLabel make-label [^String text & font] 
   (let [lab   (JLabel. text)]
     (if font
@@ -231,7 +238,7 @@
   (let [font (Font. "Times New Roman" (Font/BOLD) 48)]
     (make-label (str "Run " run " - " interest))))
 
-(defn make-font [name style size]
+(defn ^Font make-font [name style size]
   ;; Style: Font/BOLD, Font/Italic, ect. (can add multiple styles together)
   (Font. name style size))
 
@@ -250,5 +257,9 @@
   (set-title frame (str "Run" run "-" interest))
   frame) ;; returns updated frame
 
+(defn get-interest [filename]
+  filename)
 
+(defn get-run [filename]
+  filename)
 
