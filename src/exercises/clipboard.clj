@@ -1,70 +1,9 @@
 "Namespace for function that interact with the System's native clipboard for copying and pasting file and images"
-
 (ns exercises.clipboard
   (:import
    [java.awt Toolkit]
    [java.awt.datatransfer Transferable DataFlavor]
    [java.io File])) 
-
-"Class used override 'Transferable' method and pass information to the clipboard"
-(gen-class
- :name exercises.clipboard.clip
- :state state
- :init init
- :prefix "-"
- :implements [java.awt.datatransfer.Transferable])
-
-(comment
-"Class used as an instance of a 'ClipboardOwner'. Used to notify when ownership of data in clipboard is lost." 
-(gen-class
- :name exercises.clipboard.own
- :init init
- :prefix "_"
- :implements [java.awt.datatransfer.ClipboardOwner])
-)
-;;(compile 'exercises.clipboard) ;; Need to compile so that classes exist
-
-
-;; Sets the value of a class variable 
-(defn set-field [this key value] (swap! (.state this) into {key value}))
-
-;; Returns the value of a class variable  
-(defn get-field [this key] (@(.state this) key))
-
-;; ===== Clipboard Owner Implementation =================================
-;; Can alternativly remove this class and just give null argeument
-;; in constructor for 'transferable' instance
-(comment
-(defn _init [] )  
-(defn _lostOwnership [this cb conts]
-  (println "clipboard lost ownership.")))
-;; ====================================================================
-
-(defn get-files [this] (get-field this :files)) ;; gets current files in 'transferable'
-(defn add-file [this file] ;; adds a file to 'transferable' 
-  (set-field this :files (conj (get-field this :files) (File. file))))
-(defn add-all-files [this files] (doseq [file files] (add-file this file))) ;adds all 
-
-;; =====================================================================
-
-
-;; ===== "Transferable" implementation for files =============================
-(defn -init [] [[] (atom {:files []})])
-
-;; All methods override how the methods are implemented in the 'transferable' interface
-
-;; Used to allow java to tell the native system how to handel the data being sent to
-;; the system's native clipboard; list of files being copied to clipboard
-(defn -getTransferDataFlavors [this] 
-  (into-array DataFlavor [DataFlavor/javaFileListFlavor]))
-
-;; always return true, no need for error checking, only ever using one DataFlavor type
-(defn -isDataFlavorSupported [this ^DataFlavor flavor] true) 
-
-;; Returns the data stored in the transfer proxy 
-(defn -getTransferData [this ^DataFlavor flavor] (get-files this))
-  
-;; =====================================================================
 
 ;; creates a temp file which is deleted on exit
 (defn temp-file [filename]
@@ -73,19 +12,19 @@
 
 ;; creates new 'transfer proxy' with files added to data to be copied
 (defn new-file-trans [files]
-  (let [ft (exercises.clipboard.clip.)]
-    (add-all-files ft files) ft))
+  ;;(let [ft (exercises.clipboard.clip.)]
+  (let [ft (proxy [java.awt.datatransfer.Transferable] []
+                 (getTransferDataFlavors [] (into-array DataFlavor [DataFlavor/javaFileListFlavor]))
+                 (isDataFlavorSupported [flavor] true)
+                 (getTransferData [flavor] files))] ft))
 
 ;; Copies all files to the system clipboard to be used by external programs 
 (defn copy-file-to-clip [files]
-  (let [ft (new-file-trans files)
-        cb (.getSystemClipboard
-            (java.awt.Toolkit/getDefaultToolkit))]
-    (.setContents cb ft (proxy [java.awt.datatransfer.ClipboardOwner] []
-                          (lostOwnership [cb conts]
-                            (println "Proxy override for lost ownership"))))))
-
-    ;;(exercises.clipboard.own.))))
+  (let [cb (.getSystemClipboard (java.awt.Toolkit/getDefaultToolkit))]
+    (.setContents cb (new-file-trans files)
+                  (proxy [java.awt.datatransfer.ClipboardOwner] []
+                    (lostOwnership [cb conts]
+                      (println "Proxy override - lost ownership"))))))
 
 ;; Creates a temp file from buffered image and copies it to the system clipboard
 (defn image-to-temp [buff]
@@ -96,8 +35,17 @@
 ;; Copies all buffered images to system clipboard (iterates over image-to-temp)
 (defn copy-images-to-clip [imgs]
   (copy-file-to-clip (for [i imgs] (image-to-temp i))))
+
+;; Listens for when "ctrl + c" is pressed and does function (println) when true; only when frame is in focus 
+(defn listen-for-keys [frame] 
+  (.addKeyListener frame (proxy [java.awt.event.KeyListener] []
+                           (keyPressed [e]
+                             (when (and (.isControlDown e) (= java.awt.event.KeyEvent/VK_C (.getKeyCode e)))
+                               (println "KEY PRESSED")))))) ;; change to save fill/dwell charts to file then copy to clipboard
+  
+(defn test-frame []
+  (let [frame (javax.swing.JFrame.)]
+    (.setVisible frame true)
+    (listen-for-keys frame)))
     
-        
-
-
 
