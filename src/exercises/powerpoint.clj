@@ -48,6 +48,7 @@
   ([](XMLSlideShow.))
   ([filename] (XMLSlideShow. (io/input-stream filename))))
 
+
 (defn ^XSLFSlide ->slide
   "Mutably adds a slide to existing pptx presentation, returns the newly added 
    slide."
@@ -205,11 +206,12 @@
     (set-positions imgs) slide)) ;; returns new slide with formatted images
 
 ;; given a filepath for a .png file, this should make a powerpoint with 5 slides containg with 0 - 4 images on each 
-(defn test-slide-layout [filename] ;; Used to test if functions work
-  (let [ppt (->pptx) files [filename filename filename filename]]
+(defn test-slide-layout [filename & ppt] ;; Used to test if functions work
+  (let [ppt (if ppt (first ppt) (->pptx)) files [filename filename filename filename]]
     (doseq [x (range 5)]
       (slide-with-images ppt (take x files)))
     (save-ppt ppt "test-output.pptx")))
-  
+
+
     
         
