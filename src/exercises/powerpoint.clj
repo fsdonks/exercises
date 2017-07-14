@@ -7,8 +7,9 @@
              [spork.util [io :refer [list-files fpath fname fext]]])
    (:import [org.apache.poi.xslf.usermodel 
              XMLSlideShow XSLFSlide XSLFPictureData XSLFTheme
-             XSLFSlideLayout XSLFSlideMaster SlideLayout] ;any more?
-            ;[java.io ;maybe unnecessary, used in demo.
+             XSLFSlideLayout XSLFSlideMaster SlideLayout XSLFPictureShape] ;any more?
+            [java.awt Rectangle]
+              ;[java.io ;maybe unnecessary, used in demo.
             ; FileInputStream FileOutputStream File]
             ))
 
@@ -64,6 +65,9 @@
 (defn ^bytes picture->data [filename] ;; String (filename) -> java byte[]
   (util/file->bytes filename))
 
+;;(defn get-picture-data [ppt slide filename & {:keys [format] :or {format "PNG"}}]
+;;  (^XSLFPictureData .addPicture ppt (picture->data filename) (get-picturedata-type format))) 
+
 ;;given a slide, adds picture file to ppt
 (defn ^XSLFSlide add-picture
   [^XMLSlideShow ppt ^XSLFSlide slide filename &
@@ -72,6 +76,13 @@
                           (picture->data filename)
                           (get-picturedata-type format))]
     (doto slide (.createPicture data)))) ;; returns slide
+
+;; Will have to change order in things are done in when adding a picture and setting its location on the slide ...
+(defn get-image-shape [ppt slide filename & {:keys [format] :or {format "PNG"}}]
+  (let [data (^XSLFPictureData .addPicture ^XMLSlideShow ppt
+                          (picture->data filename)
+                          (get-picturedata-type format))]
+    (.createPicture ^XSLFSlide slide data)))
 
 (defn ^XMLSlideShow add-pictures
   "Given a ppt, creates new slide and adds picture from file for each file"
@@ -166,3 +177,39 @@
   (let [dir  (if dir (first dir) ".")]
     (filter #(re-matches (re-pattern (str "[\\d\\w_-]*." type)) %)
             (file-names  dir))))
+
+ 
+ ;; prints the position of shapes on each slide
+(defn print-anchors [^XMLSlideShow ppt] ;; used to copy the shapes positions from an existing ppt
+  (doseq [^XSLFSlide slide (.getSlides ppt)]
+    (println "\nNEW SLIDE \n")
+    (doseq [^XSLFPictureShape sh ( .getShapes slide)]
+      (println (type sh))
+      (println (^Rectangle .getAnchor sh)))))
+
+(def layout-map ;; map stores positions and sizes for each image to be put onto slides (only works for 1,2,3, or 4 images)
+  ;; x y Width Height 
+  {1 [(Rectangle. 124 126 476 358)]
+   2 [(Rectangle. 36 184 318 238) (Rectangle. 366 184 318 238)]
+   3 [(Rectangle. 36 120 318 180) (Rectangle. 366 120 318 180) (Rectangle. 201 324 318 180)]
+   4 [(Rectangle. 36 120 318 180) (Rectangle. 366 120 318 180) (Rectangle. 36 324 318 180) (Rectangle. 366 324 318 180)]})
+ 
+(defn set-positions [images] ;; Sets the positions of the images (at this point images are already linked to slide)
+  (doseq [^XSLFPictureShape i images :let [index (.indexOf  images i)]]
+    (.setAnchor i  (nth (get layout-map (count images)) index))))
+
+;; Adds a new slide with images in the correct layout
+(defn slide-with-images [ppt filenames & {:keys [format] :or {format "PNG"} }]
+  (let [slide (->slide ppt)
+        imgs (for [i filenames] (get-image-shape ppt slide i))]
+    (set-positions imgs) slide)) ;; returns new slide with formatted images
+
+;; given a filepath for a .png file, this should make a powerpoint with 5 slides containg with 0 - 4 images on each 
+(defn test-slide-layout [filename] ;; Used to test if functions work
+  (let [ppt (->pptx) files [filename filename filename filename]]
+    (doseq [x (range 5)]
+      (slide-with-images ppt (take x files)))
+    (save-ppt ppt "test-output.pptx")))
+  
+    
+        
