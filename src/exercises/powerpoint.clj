@@ -195,8 +195,8 @@
    3 [(Rectangle. 36 120 318 180) (Rectangle. 366 120 318 180) (Rectangle. 201 324 318 180)]
    4 [(Rectangle. 36 120 318 180) (Rectangle. 366 120 318 180) (Rectangle. 36 324 318 180) (Rectangle. 366 324 318 180)]})
  
-(defn set-positions [images] ;; Sets the positions of the images (at this point images are already linked to slide)
-  (doseq [^XSLFPictureShape i images :let [index (.indexOf  images i)]]
+(defn set-positions [^clojure.lang.LazySeq images] ;; Sets the positions of the images (at this point images are already linked to slide)
+  (doseq [^XSLFPictureShape i images :let [index  (.indexOf  images i)]]
     (.setAnchor i  (nth (get layout-map (count images)) index))))
 
 ;; Adds a new slide with images in the correct layout
