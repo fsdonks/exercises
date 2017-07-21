@@ -1,0 +1,9 @@
+Force Code,SRC2,SRC,Title,STR,Quantity,Title_10,Non-Rot,
+(U) V - a,01,ABC,ABC A,7,1,10,TRUE,sdfgdsf
+(U) V - a,02,DEF,DEF B,14,3,10,TRUE,
+(U) V - c,03,HIJ,HIJ C,21,5,10,TRUE,asdgag
+(S) V - d,03,KLM,KLM D,35,7,10,TRUE,
+(U) S - e,03,NOP,NOP E,21,5,10,FALSE,
+(U) V - f,03,QRS,QRS F,14,3,32,FALSE,
+(U) S - g,03,TUV,TUV G,7,1,10,TRUE,asdgfa
+(U) V - h,03,WXY,WXY H,1,3,32,TRUE,
