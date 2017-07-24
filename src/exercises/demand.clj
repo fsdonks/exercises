@@ -10,12 +10,20 @@
 ;; ===== READING FILE =========================================================
 
 ;;Reads lines from csv file 
+;;(defn csv->lines [filename]
+;;  (let [v (atom (transient []))]
+;;    (with-open [rdr (clojure.java.io/reader filename)]
+;;      (doseq [line (line-seq rdr) :let [data (clojure.string/split line #",")]]
+;;        (swap! v conj! v data)))
+;;    (persistent! @v)))
+
+;; Reads lines from csv file
 (defn csv->lines [filename]
-  (let [v (transient [])]
+  (let [v []]
     (with-open [rdr (clojure.java.io/reader filename)]
-      (doseq [line (line-seq rdr) :let [data (clojure.string/split line #",")]]
-        (conj! v data)))
-    (persistent! v)))
+      (reduce into ;;can't be lazy, has to read data while file is open, then closes file
+             (for [line (line-seq rdr) :let [data (clojure.string/split line #",")]]
+               (conj v data))))))
 
 ;;Given a function to format key, creats a map from lines with function called on first value in line
 (defn lines->map [lines fn-key]
@@ -58,29 +66,60 @@
 ;; ===== HELPER FUNCTIONS FOR FORMATTING TIME DATA ==================================
 
 ;; Removes empty time values from list
+;;(defn filter-times [line time-start] 
+;;  (let [times  (zipmap (for [i (range (- (count line) time-start))] i)
+;;                       (drop time-start line))
+;;        nil-times (filter #(= "" (get times %)) (keys times))]
+;;    (let [t (transient times)]
+;;      (doseq [n nil-times]
+;;        (dissoc! t n))
+;;      (persistent! t))))
+
+
+;; Removes empty time values from list
 (defn filter-times [line time-start] 
   (let [times  (zipmap (for [i (range (- (count line) time-start))] i)
                        (drop time-start line))
         nil-times (filter #(= "" (get times %)) (keys times))]
-    (let [t (transient times)]
-      (doseq [n nil-times] (dissoc! t n))
-      (persistent! t))))
+    (apply dissoc times nil-times)))
+
 
 ;;Helper function -  Returns the first continous sequence in x 
-(defn cont-seq [[x :as s]]
-  (take-while identity (map #(#{%1} %2) s (iterate inc x))))
+;;(defn cont-seq [[x :as s]]
+;;  (take-while identity (map #(#{%1} %2) s (iterate inc x))))
 
 ;; Helper function - splits x by first cont. seq
+;;(defn split-by-seq [x]
+;;  (split-at (+ 1 (.indexOf ^java.util.List  x (last (cont-seq x)))) x))
+
+(defn cont-seq [x]
+    ;;[false [] (conj (last x) (ffirst x))]
+  (let [a (first x) b (last x)]
+    (if (nil? (next a))
+      [false [] (conj b (first a))]
+      (if (= 1 (- (first (next a)) (first a)))
+        [(next a) (conj b (first a))]
+        [false (next a) (conj b (first a))])))) 
+
 (defn split-by-seq [x]
-  (split-at (+ 1 (.indexOf ^java.util.List  x (last (cont-seq x)))) x))
+  (let [x [x []] q (last (take-while #(first %) (iterate cont-seq x)))]
+    [(drop 1 (first q)) (conj (last q) (ffirst q))])) 
+        
+  ;;(take-while #(first %) (iterate cont-seq x)))
+
+(defn get-seqs [x & seqs]
+  (let [split (split-by-seq x) seqs (if seqs (first seqs) [])]
+    (if (= () (first split))
+      (conj seqs (last split))
+      (get-seqs (first split) (conj seqs (last split))))))
 
 ;; Returns a list of sequences that are continous 
-(defn get-seqs [x & seqs]
-  (let [seqs (if seqs (first seqs) {})]
-    (if (= () x)
-      (vals seqs)
-      (let [s (split-by-seq x)]
-        (get-seqs (last s) (assoc seqs (gensym) (first s)))))))
+;;(defn get-seqs [x & seqs]
+;;  (let [seqs (if seqs (first seqs) {})]
+;;    (if (= () x)
+;;      (vals seqs)
+;;      (let [s (split-by-seq x)]
+;;        (get-seqs (last s) (assoc seqs (gensym) (first s)))))))
 
 ;;(defn const-seq? [sq-m] 
 ;;  (count (filter #(= false %)
@@ -181,16 +220,6 @@
 (defn fc->forge-file [fc & root]
   (str (if root  (str (first root) "\\") "") "FORGE_" fc ".csv"))
 
-
-;; Function to get force code from filename for forge data, may need to change naming convention ...
-;;(defn filename->fc [filename]
-;;  "S - g")
-;;  ;;"FORCE-CODE from file")
-
-;;(defn fc->filename [fc]
-;;  ;;ffile)
-;;  "Filename that corresponds to FORCE-CODE")
-
 ;; Reads forge file and puts data into map and adds force-code
 (defn forge->data [filename] 
   (let [fc (forge-file->fc filename) data (tmap->data filename forge)]
@@ -232,14 +261,16 @@
 
 ;; Converts vignette consolidate data to list of formatted vectors
 (defn vcons->lines [v vcons]
-  (reduce into 
+  (apply concat
+  ;;(reduce into 
           (for [c vcons]
             (expand-vignette (merge-vignette v c)))))
 
 ;; Converts forge data to list of formatted vectors
 (defn forge->lines [v forges fc]
-  (reduce into
-          (for [f forges]
+  (apply concat
+         ;;(reduce into
+         (for [f forges]
             (expand-vignette
              (assoc
               (merge-vignette v f fc)
@@ -247,10 +278,11 @@
 
 ;; Uses vignette map to create list of demands from forge files
 (defn vmap->forge-demands [vm & root]
-  (reduce into 
-          (for [fc (filter #(= "S" (str (first %))) (keys vm)) 
-                :let [fdata (forge->data (fc->forge-file fc (if root (first root))))]]
-            (forge->lines vm fdata fc))))
+  (apply concat
+         ;;(reduce into 
+         (for [fc (filter #(= "S" (str (first %))) (keys vm)) 
+               :let [fdata (forge->data (fc->forge-file fc (if root (first root))))]]
+           (forge->lines vm fdata fc))))
 
 ;; Uses vignette map to create list of demands from vignette consolidated data
 (defn vmap->vignette-demands [vm cons-filename]
@@ -286,8 +318,9 @@
 
 ;; Gets filenames of filetype from root dir 
 (defn root->filetype [root fn-type]
-  (filter fn-type (map #(.getName ^java.io.File %) (.listFiles (clojure.java.io/file root)))))
-
+  ;;(filter fn-type (map #(.getName ^java.io.File %) (.listFiles (clojure.java.io/file root)))))
+  (filter fn-type (map spork.util.io/fname (spork.util.io/list-files root))))
+  
 ;; Creates Demand records from files in the root directory
 ;; If more than 1 vignette map or vignette consolidated file is in the directory, only the first one is used
 (defn root->demand-file [root & outfile]
@@ -296,5 +329,6 @@
         vfile (str root "\\" (first (root->filetype root vmap-file?)))
         cfile (str root "\\" (first (root->filetype root vcons-file?)))]
     (demands->file (build-demand vfile cfile root) (str root "/" outfile))))
-    
+
+
 

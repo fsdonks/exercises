@@ -1,0 +1,8 @@
+Force Code,SRC2,SRC,Title ,STR,Quantity,Title_10,Non-Rot,Comments
+(U) V - a,0,aaa,a src,1,1,10,TRUE,asdfasdf
+(U) V - b,0,bbb,b scr,2,2,10,TRUE,
+(U) V - c,0,ccc,c scr ,3,3,10,TRUE,
+(U) V - d,1,ddd,d scr,4,4,32,TRUE,asfasdf
+(U) S - e,1,eee,e src,5,5,10,TRUE,
+(U) S - f,2,fff,f src,6,6,10,TRUE,
+(U) S - g,3,ggg,g src,7,7,10,TRUE,
