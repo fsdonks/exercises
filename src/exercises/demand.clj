@@ -19,11 +19,10 @@
 
 ;; Reads lines from csv file
 (defn csv->lines [filename]
-  (let [v []]
-    (with-open [rdr (clojure.java.io/reader filename)]
-      (reduce into ;;can't be lazy, has to read data while file is open, then closes file
-             (for [line (line-seq rdr) :let [data (clojure.string/split line #",")]]
-               (conj v data))))))
+  (with-open [rdr (clojure.java.io/reader filename)]
+    (reduce into ;;can't be lazy, has to read data while file is open, then closes file
+            (for [line (line-seq rdr) :let [data (clojure.string/split line #",")]]
+              (conj [] data)))))
 
 ;;Given a function to format key, creats a map from lines with function called on first value in line
 (defn lines->map [lines fn-key]
@@ -221,10 +220,15 @@
   (str (if root  (str (first root) "\\") "") "FORGE_" fc ".csv"))
 
 ;; Reads forge file and puts data into map and adds force-code
-(defn forge->data [filename] 
+(defn forge->data [filename vcons-data] 
   (let [fc (forge-file->fc filename) data (tmap->data filename forge)]
     (filter #(number? (read-string (:branch-code % " ")))
-            (for [m data] (assoc m :force-code fc)))))
+            (for [m data]
+              (assoc 
+               (assoc m :title_10
+                      (:title_10 (first (filter #(= (:force-code %) fc) vcons-data))))
+               :force-code fc)))))
+
 ;; =======================================================================
 
 ;; ===== FUNCTIONS TO FORMAT MERGE DATA FROM DIFFERNT FILES TOGETHER ===================
@@ -277,22 +281,22 @@
               :times (:times f))))))
 
 ;; Uses vignette map to create list of demands from forge files
-(defn vmap->forge-demands [vm & root]
+(defn vmap->forge-demands [vm vcons-data & root]
   (apply concat
-         ;;(reduce into 
-         (for [fc (filter #(= "S" (str (first %))) (keys vm)) 
-               :let [fdata (forge->data (fc->forge-file fc (if root (first root))))]]
-           (forge->lines vm fdata fc))))
+         (for [fc (filter #(= "S" (str (first %))) (keys vm))
+               :let [fdata (forge->data (fc->forge-file fc (if root (first root))) vcons-data)]]
+               (forge->lines vm fdata fc))))
 
 ;; Uses vignette map to create list of demands from vignette consolidated data
-(defn vmap->vignette-demands [vm cons-filename]
-  (let [vcons (filter #(= "V" (str (first (:force-code %)))) (vcons->data cons-filename))]
+;;(defn vmap->vignette-demands [vm cons-filename]
+(defn vmap->vignette-demands [vm vcons]
+  (let [vcons (filter #(= "V" (str (first (:force-code %)))) vcons)];;(vcons->data cons-filename))]
     (vcons->lines vm vcons)))
 
 ;; Builds list of all demands from vignette file and vignette consolidate file
 (defn build-demand [vfile cfile root]
-  (let [vm (vmap->data vfile)]
-    (into (vmap->forge-demands vm root) (vmap->vignette-demands vm cfile))))
+  (let [vm (vmap->data vfile) vcons-data (into [] (vcons->data cfile))] ;; need this to not be lazy 
+    (into (vmap->forge-demands vm vcons-data root) (vmap->vignette-demands vm vcons-data))))
 
 ;; Writes list of demands to outfile 
 (defn demands->file [demands outfile]
